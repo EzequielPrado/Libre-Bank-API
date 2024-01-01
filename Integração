@@ -1,0 +1,82 @@
+### Processo
+Para receber o pagamento do cliente como comerciante, o usuário precisa ser registrado como comerciante pelo Admin. Depois que o administrador registrar e aprovar uma conta de comerciante, o comerciante poderá fazer login em seu painel. O comerciante obterá a public key, secret key e o merchant number no painel do comerciante na seção de desenvolvedores.
+
+Fluxo da página de pagamento
+Uma página de pagamento será exibida para o cliente.
+O cliente colocará o número da sua conta (gateway de pagamento) Libre Bank (Hoje o numero da conta e o numero do telefone dele)
+Em seguida, prossiga para a página OTP
+Após a verificação OTP, o cliente colocará seu número PIN válido.
+Se o saldo do cliente for suficiente, o cliente será direcionado para a página de sucesso.
+Processo de pagamento do site/loja do comerciante:
+Faça o pagamento
+Primeiro, uma ordem de pagamento será criada no servidor do gateway de pagamento.
+
+Faça o pagamento
+
+$url = 'bank.libre.app.br/api/v1/create-payment-order';
+$amount = 'YOUR_AMOUNT';
+
+$response = Http::post($url, [
+    'public_key'=> 'YOUR_PUBLIC_KEY',
+    'secret_key'=> 'YOUR_SECRET_KEY',
+    'merchant_number'=> 'MERCHANT_NUMBER',
+    'amount'=> $amount,
+])->json();
+Resposta
+
+if($response['status'] == 'merchant_not_found'){
+    //Comerciante não encontrado
+}
+
+if($response['status'] == 'payment_created'){
+    return redirect()->away($response['redirect_url']. '&callback=' . $URL_YOU_WANT_TO_REDIRECT_AFTER_PAYMENT_DONE);
+}
+
+Callback URL
+O comerciante pode definir um URL de retorno de chamada nas configurações da loja. Assim que o cliente concluir o processo de pagamento, um resumo da transação será gerado e enviado para o URL de retorno fornecido.
+
+https://PROJECT_URL/callback
+
+URL de verificação
+
+Usando o site do comerciante com ID de transação, você pode verificar o pagamento do cliente:
+
+Solicitar
+
+$transaction_id = 'GET_TRANSACTION_ID_FROM_REQUEST';
+$payment_verification_url = 'bank.libre.app.br/api/v1/payment-verification';
+
+$response = Http::post($payment_verification_url, [
+    'public_key'=> 'YOUR_PUBLIC_KEY',
+    'secret_key'=> 'YOUR_SECRET_KEY',
+    'merchant_number'=> 'MERCHANT_NUMBER',
+    'transaction_id' => $transaction_id,
+])->json();
+Resposta de sucesso
+
+{
+  "payment_record": {
+    "id": "6df7e156-69da-47d2-9d61-8464b4be0d42",
+    "merchant_user_id": 66,
+    "user_id": 57,
+    "transaction_id": "Y37tR1674562943",
+    "amount": 28,
+    "callback": "https://url/librebank/callback",
+    "is_paid": 1,
+    "expired_at": "2023-01-24T12:27:12.000000Z",
+    "created_at": "2023-01-24T12:22:12.000000Z",
+    "updated_at": "2023-01-24T12:22:27.000000Z"
+  }
+}
+
+Error Response
+
+
+{
+  "errors": [
+    {
+      "code": "error code",
+      "message": "error message will be here"
+    }
+  ]
+}
